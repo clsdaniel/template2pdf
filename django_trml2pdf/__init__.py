@@ -25,9 +25,10 @@ except:
     from StringIO import StringIO
 
 from django.conf import settings
+from django.http import HttpResponse
 from django.template import RequestContext, TemplateSyntaxError
 from django.template.loader import render_to_string
-from django.http import HttpResponse
+from django.utils.html import escape
 
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfbase.ttfonts import TTFont
@@ -191,6 +192,7 @@ def direct_to_pdf(
     try:
         pdf = rml2pdf(rml)
     except Exception, e:
+        rml = escape(rml)
         raise TemplateSyntaxError(str(e))
     response = HttpResponse(pdf, mimetype='application/pdf')
     if download:
