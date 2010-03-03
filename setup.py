@@ -1,4 +1,4 @@
-import sys
+import glob, sys
 from distutils.core import setup
 try:
     from setuptools import setup
@@ -21,8 +21,9 @@ setup(name="template2pdf",
       url="http://code.google.com/p/template2pdf/",
       license="LGPL",
       zip_safe=False,
-      packages=["template2pdf", "template2pdf/django",
-                "template2pdf/django/templatetags"],
-      package_data={"template2pdf/django/templates/": "*",
-                    "template2pdf/django/resources": "*",},
+      packages=["template2pdf", "template2pdf.dj",
+                "template2pdf/dj/templatetags"],
+      data_files=[[dirname, glob.glob(dirname+'/*')]
+                  for dirname in ["template2pdf/dj/templates",
+                                  "template2pdf/dj/resources",]]
       )
