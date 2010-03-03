@@ -5,7 +5,7 @@ try:
 except ImportError:
     pass
 
-version = '0.2'
+version = '0.3'
 
 setup(name="template2pdf",
       version=version,
