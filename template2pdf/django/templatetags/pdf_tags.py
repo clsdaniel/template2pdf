@@ -21,7 +21,7 @@ import datetime
 from django import template
 from django.template import resolve_variable
 
-from django_trml2pdf import find_resource_abspath
+from template2pdf.django import find_resource_abspath
 
 
 register = template.Library()
