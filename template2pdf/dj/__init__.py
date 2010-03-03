@@ -92,7 +92,7 @@ def render_to_pdf(template_name, params, context_instance=None,
     rml = render_to_string(
         template_name, params, context_instance).encode('utf-8')
     try:
-        pdf = rml2pdf(rml)
+        pdf = rml2pdf(rml, font_resolver)
     except Exception, e:
         rml = escape(rml)
         raise TemplateSyntaxError(str(e))
