@@ -5,11 +5,11 @@ try:
 except ImportError:
     pass
 
-version = '0.2'
+version = '0.1'
 
-setup(name="template2pdf",
+setup(name="django_trml2pdf",
       version=version,
-      description="Generates PDF via trml2pdf using template engine(s).",
+      description="Generates PDF via trml2pdf from django application",
       classifiers=["Development Status :: 4 - Beta",
                    "Intended Audience :: Developers",
                    "License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)",
@@ -21,8 +21,7 @@ setup(name="template2pdf",
       url="http://code.google.com/p/template2pdf/",
       license="LGPL",
       zip_safe=False,
-      packages=["template2pdf", "template2pdf/django",
-                "template2pdf/django/templatetags"],
-      package_data={"template2pdf/django/templates/": "*",
-                    "template2pdf/django/resources": "*",},
+      packages=["django_trml2pdf", "django_trml2pdf/templatetags"],
+      package_data={"django_trml2pdf/templates/trml2pdf": "*",
+                    "django_trml2pdf/resources": "*",},
       )
