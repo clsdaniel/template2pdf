@@ -16,159 +16,92 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-"""PDF renderer, using trml2pdf
+"""PDF renderer, using trml2pdf, for django
 """
 import os.path
-try:
-    from cStringIO import StringIO
-except:
-    from StringIO import StringIO
 
 from django.conf import settings
 from django.http import HttpResponse
-from django.template import RequestContext, TemplateSyntaxError
+from django.template import Context, RequestContext, TemplateSyntaxError
 from django.template.loader import render_to_string
 from django.utils.html import escape
 
-from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase.pdfmetrics import registerFont, registerFontFamily
+from template2pdf.utils import find_resource_abspath, rml2pdf
 
-from trml2pdf import trml2pdf
-trml2pdf.encoding = 'utf-8'
 
-# Refer to django.conf settings for PDF_RESOURCES and PRELOAD_FONTS.
+# values from settings
 try:
-    PDF_RESOURCES = settings.TRML2PDF_RESOURCES
+    FONT_DIRS = settings.T2P_FONT_DIRS
 except:
-    # PDF_RESOURCES defaults to './resources'.
-    PDF_RESOURCES = [os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), 'resources')]
+    FONT_DIRS = []
 try:
-    PRELOAD_FONTS = settings.TRML2PDF_PRELOAD_FONTS
-    # PRELOAD_FONTS defaults to empty list.
+    RESOURCE_DIRS = settings.T2P_RESOURCE_DIRS
 except:
-    PRELOAD_FONTS = []
-    # 
-    # PRELOAD_FONTS, if specified, should be a list of font registry.
-    # - Each registry should be a tuple of (font-family-name, font-info).
-    #   - Font-info should be a list of font parameters.
-    #   - Each parameter is a tuple of (type, fontname, filename, params).
-    #     - Type should be 'UnicodeCIDFont' or 'TTFont'.
-    #     - Fontname is the font name used in rml documents.
-    #     - For TTFont, filename should be supplied, as relative path
-    #       to resource directory.
-    #     - Params is a dictionary to be passed into font constructor.
-    # - Setting non-null font-family-name will registar font family.
-    #
-    # Here is a sample PRELOAD_FONTS declaration for Japanese documents.
-    # TRML2PDF_PRELOAD_FONTS = [
-    #     (None, [('UnicodeCIDFont', 'HeiseiKakuGo-W5', None, None)]),
-    #     (None, [('UnicodeCIDFont', 'HeiseiMin-W3', None, None)]),
-    #     ('IPA Mincho', [('TTFont', 'IPA Mincho', 'fonts/ipam.ttf', None),
-    #                     ('TTFont', 'IPA Mincho', 'fonts/ipam.ttf', None),
-    #                     ('TTFont', 'IPA Mincho', 'fonts/ipam.ttf', None),
-    #                     ('TTFont', 'IPA Mincho', 'fonts/ipam.ttf', None),]),
-    #     (None, [('TTFont', 'IPA Gothic', 'fonts/ipag.ttf', None)]),
-    #     (None, [('TTFont', 'IPA PMincho', 'fonts/ipapm.ttf', None)]),
-    #     (None, [('TTFont', 'IPA PGothic', 'fonts/ipapg.ttf', None)]), ]
+    RESOURCE_DIRS = []
+# populate RESOURCE_DIR with 'resources' under project and application dirs
+def populate_resource_dirs(dirs=None, resource_dirname='resources'):
+    if dirs==None:
+        dirs = [os.path.dirname(os.path.abspath(__file__))]
+    for dir_ in dirs:
+        path = os.path.join(dir_, resource_dirname)
+        if (path not in RESOURCE_DIRS):
+            RESOURCE_DIRS.append(path)
+populate_resource_dirs()        
+
+# populate FONT_DIRS with RESOURCE_DIRS/fonts
+def populate_font_dirs(dirs=RESOURCE_DIRS, font_dirname='fonts'):
+    prepends = []
+    for dir_ in dirs:
+        path = os.path.join(os.path.abspath(dir_), font_dirname)
+        if (path not in FONT_DIRS):
+            FONT_DIRS.append(path)
+populate_font_dirs()        
+# font cache
+FONT_CACHE = {}
 
 
-def find_resource_abspath(path):
-    """Find file resource from PDF_RESOURCES and return the absolute path.
+def font_resolver(font_type, params):
+    """Default TTF font resolver.
     """
-    for resource_dir in PDF_RESOURCES:
-        try_path = os.path.join(resource_dir, path)
-        if os.path.exists(try_path):
-            return os.path.abspath(try_path)
-    return None
+    if not (font_type=='TTFont'):
+        return
+    faceName = params.get('faceName', None)
+    fileName = params.get('fileName', None)
+    if not fileName.startswith('/'):
+        fileName = find_resource_abspath(fileName, FONT_DIRS)
+    if not (faceName and fileName):
+        return
+    subfontIndex = int(params.get('subfontIndex', '0'))
+    key = (fileName, subfontIndex)
+    if key in FONT_CACHE.keys():
+        return FONT_CACHE[key]
+    from reportlab.pdfbase.ttfonts import TTFont
+    font = TTFont(faceName, fileName, subfontIndex=subfontIndex)
+    if font:
+        FONT_CACHE[key] = font
+    return font
 
 
-def load_font(font_type, font_name, font_path, params=None):
-    """Load a font.
-    """
-    if font_type=='UnicodeCIDFont':
-        return UnicodeCIDFont(font_name)
-    elif font_type=='TTFont':
-        font_abspath = find_resource_abspath(font_path)
-        if font_abspath:
-            params = params or {}
-            return TTFont(font_name, font_abspath, **params)
-    return None
-
-
-def initialize():
-    """Register font (and font family) according to PRLOAD_FONTS.
-    """
-    for family, fonts_info in PRELOAD_FONTS:
-        faces = []
-        for font_info in fonts_info:
-            font = load_font(*font_info)
-            if font:
-                registerFont(font)
-                faces.append(font_info[1])
-        if family and faces:
-            registerFontFamily(family, *faces)
-    return True
-
-
-# Initialize once on loading module.
-try:
-    initialized_
-except:
-    initialized_ = initialize()
-
-
-class rml_styles_plus(trml2pdf._rml_styles):
-    """This is a hack of _rml_styles to support CJK wordWrap.
-    """
-    def _para_style_update(self, style, node):
-        """Extended _rml_styles._para_style_update to support wordWrap.
-        """
-        style = super(rml_styles_plus, self)._para_style_update(style, node)
-        for attr in ['wordWrap']:
-            if node.hasAttribute(attr):
-                style.__dict__[attr] = node.getAttribute(attr)
-        return style
-    
-
-class rml_doc_plus(trml2pdf._rml_doc):
-    """_rml_doc using rml_styles_plus instead to support CJK document.
-    """
-    def render(self, out):
-        """Renders document, retriving styles with rml_styles_plus().
-        """
-        el = self.dom.documentElement.getElementsByTagName('docinit')
-        if el:
-            self.docinit(el)
-        el = self.dom.documentElement.getElementsByTagName('stylesheet')
-        self.styles = rml_styles_plus(el)
-        el = self.dom.documentElement.getElementsByTagName('template')
-        if len(el):
-            pt_obj = trml2pdf._rml_template(out, el[0], self)
-            pt_obj.render(self.dom.documentElement.getElementsByTagName('story')[0])
-        else:
-            self.canvas = canvas.Canvas(out)
-            pd = self.dom.documentElement.getElementsByTagName('pageDrawing')[0]
-            pd_obj = trml2pdf._rml_canvas(self.canvas, None, self)
-            pd_obj.render(pd)
-            self.canvas.showPage()
-            self.canvas.save()
-
-
-def rml2pdf(rml):
-    """Generates CJK-aware PDF using monkeypatched trml2pdf.
-    """
-    doc = rml_doc_plus(rml)
-    buf = StringIO()
-    doc.render(buf)
-    return buf.getvalue()
-
-
-def direct_to_pdf(
-    request, template_name, params=None, context_object=None,
-    pdf_name=None, download=True):
+def render_to_pdf(template_name, params, context_instance=None,
+                  font_resolver=font_resolver):
     """Renders PDF from RML, which is rendered from a Django template.
+
+    """
+    context_instance = context_instance or Context()
+    context_instance.update(params)
+    rml = render_to_string(
+        template_name, params, context_instance).encode('utf-8')
+    try:
+        pdf = rml2pdf(rml)
+    except Exception, e:
+        rml = escape(rml)
+        raise TemplateSyntaxError(str(e))
+    return pdf
+
+
+def direct_to_pdf(request, template_name, params=None, context_instance=None,
+                  pdf_name=None, download=True):
+    """Simple generic view to tender rml template.
 
     >>> from django.http import HttpRequest
     >>> resp = direct_to_pdf(HttpRequest(), 'common/base.rml')
@@ -177,7 +110,7 @@ def direct_to_pdf(
     >>> resp.content[:8]
     '%PDF-1.4'
     """
-    context_object = context_object or RequestContext(request)
+    context_instance = context_instance or RequestContext(request)
     params = params or {}
     pdf_name = pdf_name or params.pop('pdf_name', None)
     if pdf_name==None:
@@ -187,15 +120,9 @@ def direct_to_pdf(
         else:
             pdf_name = 'download.pdf'
     params['pdf_name'] = pdf_name
-    rml = render_to_string(
-        template_name, params, context_object).encode('utf-8')
-    try:
-        pdf = rml2pdf(rml)
-    except Exception, e:
-        rml = escape(rml)
-        raise TemplateSyntaxError(str(e))
+    pdf = render_to_pdf(template_name, params, context_instance)
     response = HttpResponse(pdf, mimetype='application/pdf')
     if download:
-        response['Content-Disposition'] = (
-            'attachment; filename=%s' %(pdf_name))
+        disposition = 'attachment; filename=%s' %(pdf_name)
+        response['Content-Disposition'] = disposition
     return response

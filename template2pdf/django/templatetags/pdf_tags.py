@@ -19,9 +19,10 @@
 import datetime
 
 from django import template
+from django.conf import settings
 from django.template import resolve_variable
 
-from template2pdf.django import find_resource_abspath
+from template2pdf.django import find_resource_abspath, RESOURCE_DIRS
 
 
 register = template.Library()
@@ -47,7 +48,7 @@ class PdfResourceNode(template.Node):
                 actual_path = resolve_variable(self.path, context)
             except template.VariableDoesNotExist:
                 return ''
-        return find_resource_abspath(actual_path) or ''
+        return find_resource_abspath(actual_path, RESOURCE_DIRS) or ''
 
 
 @register.tag
