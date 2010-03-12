@@ -34,15 +34,19 @@ trml2pdf.encoding = 'utf-8'
 FONT_CACHE = {}
 
 
-def find_resource_abspath(path, resource_dirs):
+def find_resource_path(path, resource_dirs, absolute=False):
     """Find resource file from resource_dirs and return its absolute path.
     """
     for resource_dir in resource_dirs:
         try_path = os.path.join(resource_dir, path)
         if os.path.exists(try_path):
-            return os.path.abspath(try_path)
+            if absolute:
+                return os.path.abspath(try_path)
+            return try_path
     raise ValueError("Unable to find resource '%s', tried: %s" %(path, resource_dirs))
 
+def find_resource_abspath(path, resource_dirs):
+    return find_resource_path(path, resource_drs, absolute=True)
 
 class rml_styles_plus(trml2pdf._rml_styles):
     """This is a hack of _rml_styles to support CJK wordWrap.
