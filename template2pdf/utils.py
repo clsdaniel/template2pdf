@@ -36,17 +36,31 @@ FONT_CACHE = {}
 
 def find_resource_path(path, resource_dirs, absolute=False):
     """Find resource file from resource_dirs and return its absolute path.
+
+    >>> from os.path import abspath, dirname, join
+    >>> thisdir = dirname(abspath(__file__))
+    >>> found = find_resource_path('utils.py', [thisdir]) # should find
+    >>> found == join(thisdir, 'utils.py')
+    True
+    >>> find_resource_path('nonexistent', [thisdir]) # doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ValueError: Unable to find resource 'nonexistent', tried: [...]
     """
+    tried = []
     for resource_dir in resource_dirs:
         try_path = os.path.join(resource_dir, path)
+        tried.append(os.path.abspath(try_path))
         if os.path.exists(try_path):
             if absolute:
                 return os.path.abspath(try_path)
             return try_path
-    raise ValueError("Unable to find resource '%s', tried: %s" %(path, resource_dirs))
+    raise ValueError("Unable to find resource '%s', tried: %s" %(path, tried))
+
 
 def find_resource_abspath(path, resource_dirs):
-    return find_resource_path(path, resource_drs, absolute=True)
+    return find_resource_path(path, resource_dirs, absolute=True)
+
 
 class rml_styles_plus(trml2pdf._rml_styles):
     """This is a hack of _rml_styles to support CJK wordWrap.
@@ -59,10 +73,44 @@ class rml_styles_plus(trml2pdf._rml_styles):
             if node.hasAttribute(attr):
                 style.__dict__[attr] = node.getAttribute(attr)
         return style
-    
+
+
+class rml_canvas_plus(trml2pdf._rml_canvas):
+    """_rm_canvas with  _image overrides    
+    """
+    image_resolver = None
+
+    def _image(self, node):
+        if self.image_resolver:
+            fname, args = self.image_resolver(node)
+            self.canvas.drawImage(fname, **args)
+        else:
+            return super(rml_canvas_plus, self)._image(node)
+
+
+class rml_draw_plus(object):
+    def __init__(self, node, styles):
+        self.node = node
+        self.styles = styles
+        self.canvas = None
+
+    def render(self, canvas, doc):
+        canvas.saveState()
+        cnv = rml_canvas_plus(canvas, doc, self.styles)
+        cnv.render(self.node)
+        canvas.restoreState()
+# global snatch
+trml2pdf._rml_draw = rml_draw_plus
+
 
 class rml_doc_plus(trml2pdf._rml_doc):
     """_rml_doc using rml_styles_plus instead to support CJK document.
+
+    >>> doc = rml_doc_plus('<!DOCTYPE document SYSTEM \"rml.dtd\"><document><template><pageTemplate id=\"main\"></pageTemplate></template><stylesheet><paraStyle name=\"main\" wordWrap=\"CJK\" /></stylesheet><story></story></document>')
+    >>> from StringIO import StringIO as sio
+    >>> doc.render(sio())
+    >>> doc.styles.styles['main'].wordWrap
+    u'CJK'
     """
     def __init__(self, data, font_resolver=None):
         """Extends _rml_doc so that font_resolver attribute is supported.
@@ -118,7 +166,7 @@ class rml_doc_plus(trml2pdf._rml_doc):
         else:
             self.canvas = canvas.Canvas(out)
             pd = self.dom.documentElement.getElementsByTagName('pageDrawing')[0]
-            pd_obj = trml2pdf._rml_canvas(self.canvas, None, self)
+            pd_obj = trml2pdf._rml_canvas(self.canvas, None)
             pd_obj.render(pd)
             self.canvas.showPage()
             self.canvas.save()
@@ -131,3 +179,8 @@ def rml2pdf(rml, font_resolver=None):
     buf = StringIO()
     doc.render(buf)
     return buf.getvalue()
+
+
+if __name__=="__main__":
+    from doctest import testmod
+    testmod()

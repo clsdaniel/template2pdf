@@ -23,17 +23,37 @@ import os.path
 from jinja2 import contextfunction, TemplateError
 from werkzeug import escape, Response
 
+import kay
 from kay.conf import settings
 from kay.utils import local, render_to_string
 
 try:
+    import urllib
+    urllib.getproxies_macosx_sysconf = lambda : {}
+except:
+    pass
+
+# DIRTY HACK: Hard to explain why this works... :(
+try:
+    import reportlab.lib.utils
+    from google.appengine.api import images
+    reportlab.lib.utils.Image = images.Image
+    reportlab.lib.utils.hasImage = True
+    reportlab.lib.utils._isPILImage = lambda im: True
+except:
+    pass
+try:    
+    import os.path
+    # os.path.expanduser = lambda p: p.replace('~', '')
     from google.appengine.tools.dev_appserver import HardenedModulesHook as _H
     _H._files = {}
     _H._WHITE_LIST_C_MODULES.append('_ctypes')
     del _H
 except:
     pass
-from template2pdf.utils import find_resource_path, rml2pdf
+
+
+from template2pdf.utils import find_resource_path, find_resource_abspath, rml2pdf, rml_canvas_plus
 
 
 # values from settings
@@ -47,11 +67,12 @@ except:
     RESOURCE_DIRS = []
 # populate RESOURCE_DIR with 'resources' under project and application dirs
 def populate_resource_dirs(dirs=None, resource_dirname='resources'):
-    if dirs==None:
-        dirs = [os.path.dirname(os.path.abspath(__file__))]
+    from os.path import abspath, dirname
+    rootdir = dirname(dirname(abspath(kay.__file__)))
+    dirs = None or []
     for dir_ in dirs+[path.replace('.', '/')
                       for path in settings.INSTALLED_APPS]:
-        path = os.path.join('../', dir_, resource_dirname)
+        path = os.path.join(rootdir, dir_, resource_dirname)
         if (path not in RESOURCE_DIRS):
             RESOURCE_DIRS.append(path)
 populate_resource_dirs()        
@@ -74,11 +95,7 @@ def font_resolver(font_type, params):
     if not (font_type=='TTFont'):
         return
     faceName = params.get('faceName', '')
-    fileName = params.get('fileName', '')
-    if not fileName.startswith('/'):
-        fileName = find_resource_path(fileName, FONT_DIRS)
-    else:
-        fileName = '../'+fileName.lstrip('/')
+    fileName = find_resource_abspath(params.get('fileName', ''), FONT_DIRS)
     if not (faceName and fileName):
         return
     subfontIndex = int(params.get('subfontIndex', '0'))
@@ -91,6 +108,28 @@ def font_resolver(font_type, params):
         FONT_CACHE[key] = font
     return font
 
+@staticmethod
+def image_resolver(node):
+    fname = find_resource_path(str(node.getAttribute('file')), RESOURCE_DIRS)
+    from google.appengine.api.images import Image
+    from trml2pdf.utils import as_pt
+    img = Image(file(fname, 'rb').read())
+    sx, sy = img.width, img.height
+    args = {}
+    for tag in ('width', 'height', 'x', 'y'):
+        if node.hasAttribute(tag):
+            args[tag] = as_pt(node.getAttribute(tag))
+    if ('width' in args) and (not 'height' in args):
+        args['height'] = sy * args['width'] / sx
+    elif ('height' in args) and (not 'width' in args):
+        args['width'] = sx * args['height'] / sy
+    elif ('width' in args) and ('height' in args):
+        if (float(args['width'])/args['height'])>(float(sx)>sy):
+            args['width'] = sx * args['height'] / sy
+        else:
+            args['height'] = sy * args['width'] / sx
+    return fname, args
+
 
 def pdf_resource(arg):
     if arg.startswith('/'):
@@ -99,10 +138,13 @@ def pdf_resource(arg):
         return find_resource_path(arg, RESOURCE_DIRS)
 
 
-def render_to_pdf(template_name, params, font_resolver=font_resolver):
+def render_to_pdf(template_name, params,
+                  font_resolver=font_resolver,
+                  image_resolver=image_resolver):
     """Renders PDF from RML, which is rendered from a Django template.
     """
     rml = render_to_string(template_name, params).encode('utf-8')
+    rml_canvas_plus.image_resolver = image_resolver
     try:
         pdf = rml2pdf(rml, font_resolver)
     except Exception, e:
@@ -115,7 +157,9 @@ def render_to_pdf(template_name, params, font_resolver=font_resolver):
 
 
 def direct_to_pdf(request, template_name, params=None,
-                  pdf_name=None, download=False, font_resolver=None):
+                  pdf_name=None, download=False,
+                  font_resolver=font_resolver,
+                  image_resolver=image_resolver):
     """Simple generic view to tender rml template.
     """
     params = params or {}
@@ -128,7 +172,9 @@ def direct_to_pdf(request, template_name, params=None,
         else:
             pdf_name = 'download.pdf'
     params['pdf_name'] = pdf_name
-    pdf = render_to_pdf(template_name, params, font_resolver=font_resolver)
+    pdf = render_to_pdf(template_name, params,
+                        font_resolver=font_resolver,
+                        image_resolver=image_resolver)
     response = Response(pdf, mimetype='application/pdf')
     if download:
         disposition = 'attachment; filename=%s' %(pdf_name)
