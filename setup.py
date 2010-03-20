@@ -5,7 +5,7 @@ try:
 except ImportError:
     pass
 
-version = '0.3'
+version = '0.4'
 
 setup(name="template2pdf",
       version=version,
@@ -26,5 +26,6 @@ setup(name="template2pdf",
                 "template2pdf/dj/templatetags"],
       data_files=[[dirname, glob.glob(dirname+'/*')]
                   for dirname in ["template2pdf/dj/templates",
-                                  "template2pdf/dj/resources",]]
+                                  "template2pdf/dj/resources",]],
+      test_suite = 'tests.suite',
       )
