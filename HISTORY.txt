@@ -1,0 +1,23 @@
+History of template2pdf
+========================
+
+
+Version 0.4
+-----------
+
+* Added font/resource loading support on template2pdf.kfw.
+
+Version 0.3
+-----------
+
+* Added Kay-Framework support (template2pdf.kfw.
+
+Version 0.2 (initial version of template2pdf)
+---------------------------------------------
+
+* django_trml2pdf has moved to template2pdf.dj.
+
+Version 0.1
+-----------
+
+Initial release (as django_trml2pdf).
