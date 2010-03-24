@@ -1,0 +1,42 @@
+template2pdf のインストール
+============================
+
+必須ライブラリ
+--------------
+
+template2pdf の動作には、以下のライブラリが必要です:
+
+ReportLab (http://www.reportlab.com/)
+  ReportLab は、PDF を生成するためのライブラリで、 BSD ライセンスまたは商用
+  ライセンスのもとで利用できます。ReportLab は Pure-Python で動作し、一部の
+  機能は C 拡張をビルドして高速化できます。 template2pdf の動作はバージョン
+  2.3 以降で確認していますが、それ以前のバージョンでも動くかもしれません。
+
+  ReportLab は、 easy_install でインストールできます::
+
+    sudo easy_install reportlab
+  
+trml2pdf (http://github.com/whosaysni/trml2pdf/)
+  trml2pdf は、有償版 ReportLab がサポートしている RML 変換機能を部分的に実
+  装した LGPL のライブラリです。OpenERP プロジェクトの一部としてメンテナン
+  スされています。現在のところ、 template2pdf の利用している trml2pdf は、
+  OpenERP のものではなく、 github 上に置かれている古いバージョンに手を加え
+  たものです。PyPI に登録されている trml2pdf-0.1 はサポートしていません。
+  さしあたって、インストールするには、 github からチェックアウトしてビルド
+  してください。
+
+template2pdf (http://code.google.com/p/template2pdf/)
+  template2pdf は、PyPI に登録されています。 easy_install でインストールし
+  てください::
+
+    sudo easy_install template2pdf
+
+Django (http://djangoproject.com)
+  template2pdf を Django で使うなら、 Django をインストールする必要がありま
+  す。 Django は easy_install でインストールできます。
+
+Kay-Framework (http://code.google.com/p/kay-framework/)
+  template2pdf を Google AppEngine 上で使うには、 Kay-Framework を使う必要
+  があります。 Kay-Framework をインストールするには、
+  http://kay-docs-jp.shehas.net/tutorial.html を参考にするとよいでしょう。
+
