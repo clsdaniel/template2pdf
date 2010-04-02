@@ -53,7 +53,7 @@ except:
     pass
 
 
-from template2pdf.utils import find_resource_path, find_resource_abspath, rml2pdf, rml_canvas_plus
+from template2pdf.utils import find_resource_path, find_resource_abspath, rml2pdf
 
 
 # values from settings
@@ -144,9 +144,8 @@ def render_to_pdf(template_name, params,
     """Renders PDF from RML, which is rendered from a Django template.
     """
     rml = render_to_string(template_name, params).encode('utf-8')
-    rml_canvas_plus.image_resolver = image_resolver
     try:
-        pdf = rml2pdf(rml, font_resolver)
+        pdf = rml2pdf(rml, font_resolver, image_resolver)
     except Exception, e:
         """import sys
         tb = sys.exc_info()[2]

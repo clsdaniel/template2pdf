@@ -177,11 +177,37 @@ def default_font_resolver(font_type, params):
     return font
 
 
+def default_image_resolver(node):
+    import urllib
+    from reportlab.lib.utils import ImageReader
+    u = urllib.urlopen(str(node.getAttribute('file')))
+    s = StringIO.StringIO()
+    s.write(u.read())
+    s.seek(0)
+    img = ImageReader(s)
+    (sx, sy) = img.getSize()
+    args = {}
+    for tag in ('width', 'height', 'x', 'y'):
+        if node.hasAttribute(tag):
+            args[tag] = utils.as_pt(node.getAttribute(tag))
+    if ('width' in args) and (not 'height' in args):
+        args['height'] = sy * args['width'] / sx
+    elif ('height' in args) and (not 'width' in args):
+        args['width'] = sx * args['height'] / sy
+    elif ('width' in args) and ('height' in args):
+        if (float(args['width'])/args['height'])>(float(sx)>sy):
+            args['width'] = sx * args['height'] / sy
+        else:
+            args['height'] = sy * args['width'] / sx
+    return img, args
+
+
 class _rml_doc(object):
-    def __init__(self, data, font_resolver=None):
+    def __init__(self, data, font_resolver=None, image_resolver=None):
         self.dom = xml.dom.minidom.parseString(data)
         self.filename = self.dom.documentElement.getAttribute('filename')
         self.font_resolver = font_resolver or default_font_resolver
+        self.image_resolver = image_resolver or default_image_resolver
 
     def docinit(self, els):
         from reportlab.lib.fonts import addMapping
@@ -235,38 +261,12 @@ class _rml_doc(object):
             self.canvas.save()
 
 
-def default_image_resolver(node):
-    import urllib
-    from reportlab.lib.utils import ImageReader
-    u = urllib.urlopen(str(node.getAttribute('file')))
-    s = StringIO.StringIO()
-    s.write(u.read())
-    s.seek(0)
-    img = ImageReader(s)
-    (sx, sy) = img.getSize()
-    args = {}
-    for tag in ('width', 'height', 'x', 'y'):
-        if node.hasAttribute(tag):
-            args[tag] = utils.as_pt(node.getAttribute(tag))
-    if ('width' in args) and (not 'height' in args):
-        args['height'] = sy * args['width'] / sx
-    elif ('height' in args) and (not 'width' in args):
-        args['width'] = sx * args['height'] / sy
-    elif ('width' in args) and ('height' in args):
-        if (float(args['width'])/args['height'])>(float(sx)>sy):
-            args['width'] = sx * args['height'] / sy
-        else:
-            args['height'] = sy * args['width'] / sx
-    return img, args
-
-
 class _rml_canvas(object):
-    def __init__(self, canvas, doc_tmpl=None, doc=None, image_resolver=None):
+    def __init__(self, canvas, doc_tmpl=None, doc=None):
         self.canvas = canvas
         self.styles = doc.styles
         self.doc_tmpl = doc_tmpl
         self.doc = doc
-        self.image_resolver = image_resolver or default_image_resolver
         self.init_tag_handlers()
 
     def _textual(self, node):
@@ -379,7 +379,7 @@ class _rml_canvas(object):
             self.canvas.setDash(node.getAttribute('dash').split(','))
 
     def _image(self, node):
-        img, args = self.image_resolver(node)
+        img, args = self.doc.image_resolver(node)
         self.canvas.drawImage(img, **args)
 
     def _path(self, node):
