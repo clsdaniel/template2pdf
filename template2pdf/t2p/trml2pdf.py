@@ -196,7 +196,7 @@ class _rml_doc(object):
                     faceName=subnode.getAttribute('faceName').encode('utf-8'))
                 font = self.font_resolver('UnicodeCIDFont', params)
                 if font:
-                    registerFont(font)
+                    pdfmetrics.registerFont(font)
             # register TrueType fonts
             for subnode in node.getElementsByTagName('registerTTFont'):
                 faceName = subnode.getAttribute('faceName').encode('utf-8')
@@ -212,7 +212,7 @@ class _rml_doc(object):
                 # Resolvers are recommended to implement cache.
                 font = self.font_resolver('TTFont', params)
                 if font:
-                    registerFont(font)
+                    pdfmetrics.registerFont(font)
 
     def render(self, out):
         el = self.dom.documentElement.getElementsByTagName('docinit')
@@ -257,7 +257,7 @@ def default_image_resolver(node):
             args['width'] = sx * args['height'] / sy
         else:
             args['height'] = sy * args['width'] / sx
-    return fname, args
+    return img, args
 
 
 class _rml_canvas(object):
@@ -267,6 +267,7 @@ class _rml_canvas(object):
         self.doc_tmpl = doc_tmpl
         self.doc = doc
         self.image_resolver = image_resolver or default_image_resolver
+        self.init_tag_handlers()
 
     def _textual(self, node):
         rc = ''
@@ -378,7 +379,7 @@ class _rml_canvas(object):
             self.canvas.setDash(node.getAttribute('dash').split(','))
 
     def _image(self, node):
-        fname, args = self.image_resolver(node)
+        img, args = self.image_resolver(node)
         self.canvas.drawImage(img, **args)
 
     def _path(self, node):
@@ -409,8 +410,8 @@ class _rml_canvas(object):
             self.path,
             **utils.getAttrsAsDict(node, [], {'fill':'bool','stroke':'bool'}))
 
-    def render(self, node):
-        tags = {
+    def init_tag_handlers(self):
+        self.tag_handlers = {
             'drawCentredString': self._drawCenteredString,
             'drawRightString': self._drawRightString,
             'drawString': self._drawString,
@@ -430,11 +431,13 @@ class _rml_canvas(object):
             'translate': self._translate,
             'image': self._image
         }
+
+    def render(self, node):
         for nd in node.childNodes:
             if nd.nodeType==nd.ELEMENT_NODE:
-                for tag in tags:
+                for tag in self.tag_handlers:
                     if nd.localName==tag:
-                        tags[tag](nd)
+                        self.tag_handlers[tag](nd)
                         break
 
 class _rml_draw(object):
