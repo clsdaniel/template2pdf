@@ -4,9 +4,6 @@ Installing
 Following dependencies are required:
 
 - ReportLab (tested under 2.4. 2.3 may work fine).
-- trml2pdf by Rohit Sankaran (http://github.com/roadhead/)
-  Note that django_trml2pdf is tested for whosaysni's copy:
-  (http://github.com/whosaysni/trml2pdf/) because of CJK support.
 - Django (tested for 1.1 -- 1.0 should work fine).
 
 You will need PIL for image support, as trml2pdf requires.
