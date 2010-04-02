@@ -6,6 +6,20 @@ template2pdf のインストール
 
 template2pdf の動作には、以下のライブラリが必要です:
 
+.. note::
+  バージョン 0.4 までの template2pdf の動作には、 trml2pdf が必要です。
+
+  trml2pdf は、有償版 ReportLab がサポートしている RML 変換機能を部分的に実
+  装した LGPL のライブラリです。OpenERP プロジェクトの一部としてメンテナン
+  スされています。現在のところ、 template2pdf の利用している trml2pdf は、
+  OpenERP のものではなく、 github 上に置かれている古いバージョンに手を加え
+  たものです。PyPI に登録されている trml2pdf-0.1 はサポートしていません。
+  さしあたって、インストールするには、 github からチェックアウトしてビルド
+  してください。
+
+  バージョン 0.5 の template2pdf には trml2pdf がバンドルされているので、
+  インストールは不要です。
+
 ReportLab (http://www.reportlab.com/)
   ReportLab は、PDF を生成するためのライブラリで、 BSD ライセンスまたは商用
   ライセンスのもとで利用できます。ReportLab は Pure-Python で動作し、一部の
@@ -15,15 +29,6 @@ ReportLab (http://www.reportlab.com/)
   ReportLab は、 easy_install でインストールできます::
 
     sudo easy_install reportlab
-  
-trml2pdf (http://github.com/whosaysni/trml2pdf/)
-  trml2pdf は、有償版 ReportLab がサポートしている RML 変換機能を部分的に実
-  装した LGPL のライブラリです。OpenERP プロジェクトの一部としてメンテナン
-  スされています。現在のところ、 template2pdf の利用している trml2pdf は、
-  OpenERP のものではなく、 github 上に置かれている古いバージョンに手を加え
-  たものです。PyPI に登録されている trml2pdf-0.1 はサポートしていません。
-  さしあたって、インストールするには、 github からチェックアウトしてビルド
-  してください。
 
 template2pdf (http://code.google.com/p/template2pdf/)
   template2pdf は、PyPI に登録されています。 easy_install でインストールし

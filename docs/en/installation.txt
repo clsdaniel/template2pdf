@@ -1,0 +1,46 @@
+Installing template2pdf 
+========================
+
+Prerequisites
+--------------
+
+template2pdf requires following libraries installed:
+
+.. note::
+  template2pdf prior to 0.4 requires trml2pdf.
+
+  trml2pdf is a free library to translate RML subset into PDF, which is
+  commercially supported in ReportLab. distributed under the LGPL license.
+  While trml2pdf is currently mainained as a part of OpenERP project, or
+  published as trml2pdf-0.1 on PyPI, template2pdf is based on the older
+  branch on github originally maintained by Rohit Sankaran.
+  To install trml2pdf, clone github repository and build by yourself.
+  
+  Starting from version 0.5, template2pdf comes with bundled trml2pdf as 
+  template2pdf.t2p.
+
+ReportLab (http://www.reportlab.com/)
+  ReportLab is a PDF generation library distributed under the BSD or
+  ReportLab's commercial license. ReportLab works both in Pure-Python mode
+  and partially c-accelerated mode. template2pdf works well with version
+  2.3 of ReportLab or later, and may work with prior one.
+
+  ReportLab can be installed with easy_install::
+
+    sudo easy_install reportlab
+
+template2pdf (http://code.google.com/p/template2pdf/)
+  template2pdf is registered on PyPI. You can install it with
+  easy_install::
+
+    sudo easy_install template2pdf
+
+Django (http://djangoproject.com)
+  To use template2pdf in Django, you will need Django installed.
+  Django can be installed with easy_install::
+
+Kay-Framework (http://code.google.com/p/kay-framework/)
+  template2pdf supports Google AppEngine with Kay-Framework.
+  To install Kay-Framework, see 
+  http://kay-docs.shehas.net/tutorial.html.
+
