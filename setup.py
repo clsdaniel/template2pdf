@@ -5,12 +5,11 @@ try:
 except ImportError:
     pass
 
-version = '0.4'
+version = '0.5'
 
 setup(name="template2pdf",
       version=version,
-      description=("Generates PDF via trml2pdf using template engine(s): \n"
-                   "Superceding django_trml2pdf."),
+      description=("Renders Django/Jinja2 templates into PDF."),
       classifiers=["Development Status :: 4 - Beta",
                    "Intended Audience :: Developers",
                    "License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)",
@@ -22,10 +21,13 @@ setup(name="template2pdf",
       url="http://code.google.com/p/template2pdf/",
       license="LGPL",
       zip_safe=False,
-      packages=["template2pdf", "template2pdf.dj",
-                "template2pdf/dj/templatetags"],
-      data_files=[[dirname, glob.glob(dirname+'/*')]
-                  for dirname in ["template2pdf/dj/templates",
-                                  "template2pdf/dj/resources",]],
+      packages=["template2pdf", "template2pdf.t2p", "template2pdf.dj",
+                "template2pdf/dj/templatetags", "template2pdf.kfw",],
+      data_files=([[dirname, glob.glob(dirname+'/*')]
+                   for dirname in ["template2pdf/dj/templates",
+                                   "template2pdf/dj/resources",
+                                   "template2pdf/kfw/templates",
+                                   "template2pdf/kfw/resources"]]+
+                   [['template2pdf/t2p', glob.glob('template2pdf/t2p/*.txt')]]),
       test_suite = 'tests.suite',
       )
