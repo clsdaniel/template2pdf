@@ -1,0 +1,109 @@
+{% extends "base.rml" %}
+{% load pdf_tags %}
+
+{% block docinit %}
+<docinit>
+  <registerCidFont faceName="HeiseiKakuGo-W5" />
+  <registerTTFont faceName="Serif" fileName="/Library/Fonts/Microsoft/meiryo.ttf" />
+</docinit>
+{% endblock docinit %}
+
+{% block header %}
+  <image file="{% pdf_resource "images/logo.png" %}" 
+	 x="40" y="790" height="20" width="145"/>
+  <place x="290" y="770" height="40" width="250">
+    <para style="Header">
+      <font size="+2">領収書 #00000002</font><br/>
+      {{ datestr }}
+      
+    </para>
+  </place>
+  <setFont name="Serif" size="9"/>
+  <drawRightString x="541" y="20"><pageNumber/>ページ</drawRightString>
+{% endblock header %}
+
+
+{% block content %}
+<blockTable style="Layout" colWidths="260,250">
+  <tr>
+    <td>
+      <para style="Normal">
+	<font size="+4">アーサー王（に扮したジョン・クリーズ）ご一行様</font><br/>
+      </para>
+      <spacer length="5mm" />
+      <para style="Normal">
+	下記の通り請求いたします。<br/>
+	支払い方法: 当社指定銀行口座あて振り込み<br/>
+	支払期日: 納品月末締め翌月末<br/>
+      </para>
+    </td>
+    <td>
+      <para style="Large">
+	株式会社ニッの騎士
+      </para>
+      <spacer length="5mm" />
+      <para style="Normal">
+	代表取締騎士 Ni Peng Kneee-wom
+      </para>
+      <spacer length="5mm" />
+      <para style="Normal">
+	〒2222222<br/>
+	2-2-2, Shrubbery Garden, Eughen Woods<br/>
+	BC222, England<br/>
+	Phone:02-2222-2222 Fax:02-2222-2121<br/>
+      </para>
+    </td>
+  </tr>
+</blockTable>
+<spacer length="1cm" />
+<para style="Large">
+  合計金額 {{ price }} ヘリング（税込）
+</para>
+<spacer length="5mm" />
+<blockTable style="Grid" colWidths="30,40,70,200,65,35,70" repeatRows="1">
+  <tr>
+    <td>#</td>
+    <td>PLU#</td>
+    <td>名称</td>
+    <td>説明</td>
+    <td>単価</td>
+    <td>数量</td>
+    <td>金額</td>
+  </tr>
+  {% for item in items %}
+  <tr>
+    <td>{{ forloop.counter }}</td>
+    <td>{{ item.plu }}</td>
+    <td>{{ item.name }}</td>
+    <td>
+      <para style="Normal">
+	{{ item.desc }}
+      </para>
+    </td>
+    <td>{{ item.unit_price }}</td>
+    <td>{{ item.quantity }}</td>
+    <td>{{ item.subtotal }}</td>
+  </tr>
+  {% endfor %}
+</blockTable>
+<spacer length="1cm" />
+<para style="Normal">
+合計金額を、下記のいずれかの銀行口座にお振り込みください。<br/>
+　銀行振込：イングランド銀行 キャメロット支店 普通口座 222222 ｶ)ﾆｯﾉｷｼ<br/>
+　PayPal：「ni@kneee-wom.ni」宛<br/>
+</para>
+<para style="Normal">
+大変勝手ながら、銀行振込の手数料等はお客様にてご負担下さいますよう、お願い申し上げます。
+</para>
+<para style="Normal">
+BC222年2月22日をもって、株式会社ニッの騎士は、100%子会社株式会社エキエキエキエキプカングルパングアワユを設立し、ヘリングシュラバリー事業を移管しました。現在、銀行の名義変更の手続き中であるため、お支払い先口座名は「ﾆｯﾉｷｼ」のままです。ご了承ください。
+</para>
+<spacer length="5mm" />
+<para style="Large">
+支払わないと、生きてこの森を帰さないよ。ニッ！
+</para>
+
+{% endblock content %}
+
+{% block footer %}
+{% endblock footer %}
