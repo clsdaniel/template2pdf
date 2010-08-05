@@ -108,11 +108,10 @@ def font_resolver(font_type, params):
         FONT_CACHE[key] = font
     return font
 
-@staticmethod
 def image_resolver(node):
     fname = find_resource_path(str(node.getAttribute('file')), RESOURCE_DIRS)
     from google.appengine.api.images import Image
-    from trml2pdf.utils import as_pt
+    from template2pdf.t2p.utils import as_pt
     img = Image(file(fname, 'rb').read())
     sx, sy = img.width, img.height
     args = {}
@@ -147,10 +146,6 @@ def render_to_pdf(template_name, params,
     try:
         pdf = rml2pdf(rml, font_resolver, image_resolver)
     except Exception, e:
-        """import sys
-        tb = sys.exc_info()[2]
-        raise ValueError(tb)"""
-        rml = escape(rml)
         raise TemplateError(str(e))
     return pdf
 

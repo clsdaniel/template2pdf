@@ -61,10 +61,10 @@ def find_resource_abspath(path, resource_dirs):
     return find_resource_path(path, resource_dirs, absolute=True)
 
 
-def rml2pdf(rml, font_resolver=None):
+def rml2pdf(rml, font_resolver=None, image_resolver=None):
     """Generates CJK-aware PDF using monkeypatched trml2pdf.
     """
-    doc = trml2pdf._rml_doc(rml, font_resolver)
+    doc = trml2pdf._rml_doc(rml, font_resolver, image_resolver)
     buf = StringIO()
     doc.render(buf)
     return buf.getvalue()
