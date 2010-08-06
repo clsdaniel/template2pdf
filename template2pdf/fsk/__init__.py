@@ -16,65 +16,29 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-"""PDF renderer, using trml2pdf, for kay-framework
+"""PDF renderer, using trml2pdf, for flask-framework
 """
 import os.path
-
-from jinja2 import contextfunction, TemplateError
+from jinja2 import contextfunction, Template, TemplateError
 from werkzeug import escape, Response
+from flask import Module, request
+from template2pdf.utils import FontResolver, find_resource_path, find_resource_abspath, rml2pdf
 
-import kay
-from kay.conf import settings
-from kay.utils import local, render_to_string
+# make this as a module
+mod = Module(__name__)
 
-# DIRTY HACKs: Hard to explain why this works... :(
-try:
-    import urllib
-    urllib.getproxies_macosx_sysconf = lambda : {}
-except:
-    pass
-try:
-    import reportlab.lib.utils
-    from google.appengine.api import images
-    reportlab.lib.utils.Image = images.Image
-    reportlab.lib.utils.hasImage = True
-    reportlab.lib.utils._isPILImage = lambda im: True
-except:
-    pass
-try:    
-    import os.path
-    # os.path.expanduser = lambda p: p.replace('~', '')
-    from google.appengine.tools.dev_appserver import HardenedModulesHook as _H
-    _H._files = {}
-    _H._WHITE_LIST_C_MODULES.append('_ctypes')
-    del _H
-except:
-    pass
-
-from template2pdf.utils import find_resource_path, find_resource_abspath, rml2pdf, FontResolver
-
-
-# values from settings
-try:
-    FONT_DIRS = settings.T2P_FONT_DIRS
-except:
-    FONT_DIRS = []
-try:
-    RESOURCE_DIRS = settings.T2P_RESOURCE_DIRS
-except:
-    RESOURCE_DIRS = []
+FONT_DIRS = []
+RESOURCE_DIRS = []
 # populate RESOURCE_DIR with 'resources' under project and application dirs
 def populate_resource_dirs(dirs=None, resource_dirname='resources'):
     from os.path import abspath, dirname
-    rootdir = dirname(dirname(abspath(kay.__file__)))
+    rootdir = dirname(dirname(abspath(__file__)))
     dirs = None or []
-    for dir_ in dirs+[path.replace('.', '/')
-                      for path in settings.INSTALLED_APPS]:
+    for dir_ in dirs:
         path = os.path.join(rootdir, dir_, resource_dirname)
         if (path not in RESOURCE_DIRS):
             RESOURCE_DIRS.append(path)
 populate_resource_dirs()        
-
 # populate FONT_DIRS with RESOURCE_DIRS/fonts
 def populate_font_dirs(dirs=RESOURCE_DIRS, font_dirname='fonts'):
     prepends = []
@@ -127,11 +91,26 @@ def render_to_pdf(template_name, params,
     try:
         pdf = rml2pdf(rml, font_resolver, image_resolver)
     except Exception, e:
+        raise
         raise TemplateError(str(e))
     return pdf
 
+def render_to_string(template, context={}, processors=None):
+  """
+  A function for template rendering adding useful variables to context
+  automatically, according to the CONTEXT_PROCESSORS settings.
+  """
+  if processors is None:
+    processors = ()
+  else:
+    processors = tuple(processors)
+  for processor in processors:
+    context.update(processor(request))
+  template = Template(mod.open_resource('templates/%s' %(template)).read())
+  return template.render(context)
 
-def direct_to_pdf(request, template_name, params=None,
+
+def direct_to_pdf(template_name, params=None,
                   pdf_name=None, download=False,
                   font_resolver=font_resolver,
                   image_resolver=image_resolver):
