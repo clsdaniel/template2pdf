@@ -26,7 +26,7 @@ from django.template import Context, RequestContext, TemplateSyntaxError
 from django.template.loader import render_to_string
 from django.utils.html import escape
 
-from template2pdf.utils import find_resource_abspath, rml2pdf
+from template2pdf.utils import find_resource_abspath, rml2pdf, FontResolver
 
 
 # values from settings
@@ -59,27 +59,28 @@ populate_font_dirs()
 # font cache
 FONT_CACHE = {}
 
+font_resolver = FontResolver(FONT_DIRS, FONT_CACHE).resolve_font
 
-def font_resolver(font_type, params):
-    """Default TTF font resolver.
-    """
-    if not (font_type=='TTFont'):
-        return
-    faceName = params.get('faceName', None)
-    fileName = params.get('fileName', None)
-    if not fileName.startswith('/'):
-        fileName = find_resource_abspath(fileName, FONT_DIRS)
-    if not (faceName and fileName):
-        return
-    subfontIndex = int(params.get('subfontIndex', '0'))
-    key = (fileName, subfontIndex)
-    if key in FONT_CACHE.keys():
-        return FONT_CACHE[key]
-    from reportlab.pdfbase.ttfonts import TTFont
-    font = TTFont(faceName, fileName, subfontIndex=subfontIndex)
-    if font:
-        FONT_CACHE[key] = font
-    return font
+# def font_resolver(font_type, params):
+#     """Default TTF font resolver.
+#     """
+#     if not (font_type=='TTFont'):
+#         return
+#     faceName = params.get('faceName', None)
+#     fileName = params.get('fileName', None)
+#     if not fileName.startswith('/'):
+#         fileName = find_resource_abspath(fileName, FONT_DIRS)
+#     if not (faceName and fileName):
+#         return
+#     subfontIndex = int(params.get('subfontIndex', '0'))
+#     key = (fileName, subfontIndex)
+#     if key in FONT_CACHE.keys():
+#         return FONT_CACHE[key]
+#     from reportlab.pdfbase.ttfonts import TTFont
+#     font = TTFont(faceName, fileName, subfontIndex=subfontIndex)
+#     if font:
+#         FONT_CACHE[key] = font
+#     return font
 
 
 def render_to_pdf(template_name, params, context_instance=None,

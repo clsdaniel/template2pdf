@@ -223,6 +223,8 @@ class _rml_doc(object):
                 font = self.font_resolver('UnicodeCIDFont', params)
                 if font:
                     pdfmetrics.registerFont(font)
+                else:
+                    raise ValueError(str(self.font_resolver==default_font_resolver))
             # register TrueType fonts
             for subnode in node.getElementsByTagName('registerTTFont'):
                 faceName = subnode.getAttribute('faceName').encode('utf-8')

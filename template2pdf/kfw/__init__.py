@@ -53,7 +53,7 @@ except:
     pass
 
 
-from template2pdf.utils import find_resource_path, find_resource_abspath, rml2pdf
+from template2pdf.utils import find_resource_path, find_resource_abspath, rml2pdf, FontResolver
 
 
 # values from settings
@@ -88,25 +88,30 @@ populate_font_dirs()
 # font cache
 FONT_CACHE = {}
 
+font_resolver = FontResolver(FONT_DIRS, FONT_CACHE).resolve_font
 
-def font_resolver(font_type, params):
-    """Default TTF font resolver.
-    """
-    if not (font_type=='TTFont'):
-        return
-    faceName = params.get('faceName', '')
-    fileName = find_resource_abspath(params.get('fileName', ''), FONT_DIRS)
-    if not (faceName and fileName):
-        return
-    subfontIndex = int(params.get('subfontIndex', '0'))
-    key = (fileName, subfontIndex)
-    if key in FONT_CACHE.keys():
-        return FONT_CACHE[key]
-    from reportlab.pdfbase.ttfonts import TTFont
-    font = TTFont(faceName, fileName, subfontIndex=subfontIndex)
-    if font:
-        FONT_CACHE[key] = font
-    return font
+# def font_resolver(font_type, params):
+#     """Default TTF font resolver.
+#     """
+#     if font_type=='UnicodeCIDFont':
+#         faceName = params.get('faceName', '')
+#         font = UnicodeCIDFont(faceName)
+#         return font
+#     elif not (font_type=='TTFont'):
+#         return None
+#     faceName = params.get('faceName', '')
+#     fileName = find_resource_abspath(params.get('fileName', ''), FONT_DIRS)
+#     if not (faceName and fileName):
+#         return
+#     subfontIndex = int(params.get('subfontIndex', '0'))
+#     key = (fileName, subfontIndex)
+#     if key in FONT_CACHE.keys():
+#         return FONT_CACHE[key]
+#     from reportlab.pdfbase.ttfonts import TTFont
+#     font = TTFont(faceName, fileName, subfontIndex=subfontIndex)
+#     if font:
+#         FONT_CACHE[key] = font
+#     return font
 
 def image_resolver(node):
     fname = find_resource_path(str(node.getAttribute('file')), RESOURCE_DIRS)
