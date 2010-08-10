@@ -25,7 +25,7 @@ from django.http import HttpResponse
 from django.template import Context, RequestContext, TemplateSyntaxError
 from django.template.loader import render_to_string
 from django.utils.html import escape
-from template2pdf.utils import find_resource_abspath, rml2pdf, FontResolver
+from template2pdf.utils import find_resource_abspath, rml2pdf, FontResolver, ImageResolver
 
 
 # values from settings
@@ -59,10 +59,11 @@ populate_font_dirs()
 FONT_CACHE = {}
 
 font_resolver = FontResolver(FONT_DIRS, FONT_CACHE).resolve_font
+image_resolver = ImageResolver(RESOURCE_DIRS).resolve_image
 
 
 def render_to_pdf(template_name, params, context_instance=None,
-                  font_resolver=font_resolver):
+                  font_resolver=font_resolver, image_resolver=image_resolver):
     """Renders PDF from RML, which is rendered from a Django template.
 
     """
@@ -71,7 +72,7 @@ def render_to_pdf(template_name, params, context_instance=None,
     rml = render_to_string(
         template_name, params, context_instance).encode('utf-8')
     try:
-        pdf = rml2pdf(rml, font_resolver)
+        pdf = rml2pdf(rml, font_resolver, image_resolver)
     except Exception, e:
         rml = escape(rml)
         raise TemplateSyntaxError(str(e))

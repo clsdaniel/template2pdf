@@ -23,6 +23,8 @@ except:
     from StringIO import StringIO
 
 from t2p import trml2pdf
+from t2p import utils as t2putils
+from reportlab.lib.utils import ImageReader
 
 # caches pre-loaded fonts
 FONT_CACHE = {}
@@ -66,6 +68,43 @@ def rml2pdf(rml, font_resolver=None, image_resolver=None):
     doc.render(buf)
     return buf.getvalue()
 
+class ImageResolver(object):
+    """Default image resolver.
+    """
+
+    def __init__(self, image_dirs=None):
+        self.image_dirs = image_dirs
+
+    def resolve_image(self, node):
+        # Get filename from image node attribute file
+        filename = str(node.getAttribute('file'))
+
+        # Try resolving filename from image resource directories
+        try:
+            path = find_resource_abspath(filename, self.image_dirs)
+        except ValueError:
+            # On fail, return None
+            return None, None
+
+        # Open the file on the image reader
+        fd = file(path, "r")
+        img = ImageReader(fd)
+
+        (sx, sy) = img.getSize()
+        args = {}
+        for tag in ('width', 'height', 'x', 'y'):
+            if node.hasAttribute(tag):
+                args[tag] = t2putils.as_pt(node.getAttribute(tag))
+        if ('width' in args) and (not 'height' in args):
+            args['height'] = sy * args['width'] / sx
+        elif ('height' in args) and (not 'width' in args):
+            args['width'] = sx * args['height'] / sy
+        elif ('width' in args) and ('height' in args):
+            if (float(args['width'])/args['height'])>(float(sx)>sy):
+                args['width'] = sx * args['height'] / sy
+            else:
+                args['height'] = sy * args['width'] / sx
+        return img, args
 
 class FontResolver(object):
     """Default font resolver.
